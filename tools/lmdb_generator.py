@@ -111,10 +111,10 @@ class LMDBImageGenerator(LMDBGenerator):
 
 
         Arguments:
-            directory_path {str} -- _description_
+            directory_path {str} -- Path to a directory containing image files.
 
         Keyword Arguments:
-            extensions {List[str]} -- _description_ (default: {["jpg", "png"]})
+            extensions {List[str]} -- File extensions to be considered  (default: {["jpg", "png"]})
 
         Raises:
             NotADirectoryError: When the `directory_path` does not exist.
