@@ -14,8 +14,8 @@ class LMDBGenerator:
     def __init__(self, buffer_size: int = 1000):
         """Class constructor.
 
-        Keyword Arguments:
-            buffer_size {int} -- Buffer size to save on disk (default: {1000}).
+        Args:
+            buffer_size (int, optional): Buffer size to save on disk. Defaults to 1000.
         """
 
         self.buffer_size = buffer_size
@@ -23,12 +23,10 @@ class LMDBGenerator:
     def _write_buffer(self, buffer: Dict, lmdb_dataset: object, free_buffer: bool = False):
         """Write a buffer in a LMDB dataset (i.e. LMDB file).
 
-        Arguments:
-            buffer {Dict[any]} -- A buffer contaning data and their respective annotations.
-            lmdb_dataset {object} -- The LMDB dataset file.
-
-        Keyword Arguments:
-            free_buffer {bool} -- Whether free the buffer dictionary (default: {False}).
+        Args:
+            buffer (Dict): A buffer contaning data and their respective annotations.
+            lmdb_dataset (object): The LMDB dataset file.
+            free_buffer (bool, optional): Whether free the buffer dictionary. Defaults to False.
         """
 
         with lmdb_dataset.begin(write=True) as dataset:
@@ -41,10 +39,10 @@ class LMDBGenerator:
     def create_dataset(self, data: List[Any], annotations: List[Any], output_path: str):
         """Create a LMDB dataset.
 
-        Arguments:
-            data {List[Any]} -- List of data to be kept in the dataset.
-            annotations {List[Any]} -- List of annotations to be kept in the dataset.
-            output_path {str} -- Path to save the LMDB file.
+        Args:
+            data (List[Any]): List of data to be kept in the dataset.
+            annotations (List[Any]): List of annotations to be kept in the dataset.
+            output_path (str): Path to save the LMDB file.
         """
 
         assert len(data) == len(
@@ -72,17 +70,16 @@ class LMDBImageGenerator(LMDBGenerator):
     ) -> List[object]:
         """Read images from a given directory and return binary files instead of arrays of pixels.
 
-        Arguments:
-            directory_path {str} -- Path to a directory containing image files.
-
-        Keyword Arguments:
-            extensions {List[str]} -- File extensions to be considered (default: {["jpg", "png"]}).
+        Args:
+            directory_path (str): Path to a directory containing image files.
+            extensions (List[str], optional): File extensions to be considered.
+            Defaults to ["jpg", "png"].
 
         Raises:
             NotADirectoryError: When the `directory_path` does not exist.
 
         Returns:
-            List[object] -- A list of images as binary files.
+            List[object]: A list of images as binary files.
         """
 
         if not os.path.exists(directory_path):
@@ -114,18 +111,16 @@ class LMDBImageGenerator(LMDBGenerator):
         <annotation>_<filename>.<extension>
         Example: 9598098491_01.jpg, 9303974519_02.jpg, 2404269934_03.jpg, etc.
 
-
-        Arguments:
-            directory_path {str} -- Path to a directory containing image files.
-
-        Keyword Arguments:
-            extensions {List[str]} -- File extensions to be considered  (default: {["jpg", "png"]})
+        Args:
+            directory_path (str): Path to a directory containing image files.
+            extensions (List[str], optional): File extensions to be considered.
+            Defaults to ["jpg", "png"].
 
         Raises:
             NotADirectoryError: When the `directory_path` does not exist.
 
         Returns:
-            List[str] -- A list of annotations.
+            List[str]: A list of annotations.
         """
 
         if not os.path.exists(directory_path):
