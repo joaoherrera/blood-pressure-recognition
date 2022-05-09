@@ -2,7 +2,9 @@
 # More info at: https://lmdb.readthedocs.io/en/release/
 
 import os
+from argparse import ArgumentParser
 from glob import glob
+from itertools import chain
 from typing import Any, Dict, List
 
 import lmdb
@@ -18,7 +20,7 @@ class LMDBGenerator:
 
         self.buffer_size = buffer_size
 
-    def _write_buffer(self, buffer: Dict[Any], lmdb_dataset: object, free_buffer: bool = False):
+    def _write_buffer(self, buffer: Dict, lmdb_dataset: object, free_buffer: bool = False):
         """Write a buffer in a LMDB dataset (i.e. LMDB file).
 
         Arguments:
@@ -31,7 +33,7 @@ class LMDBGenerator:
 
         with lmdb_dataset.begin(write=True) as dataset:
             for key, value in buffer.items():
-                dataset.put(key, value)
+                dataset.put(str(key).encode(), str(value).encode())
 
         if free_buffer:
             buffer = {}
@@ -50,7 +52,7 @@ class LMDBGenerator:
         ), "Number of samples does not match with the number of annotations."
 
         buffer = {}
-        lmdb_dataset = lmdb.open(output_path)
+        lmdb_dataset = lmdb.open(output_path, map_size=int(1e9))
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -89,11 +91,14 @@ class LMDBImageGenerator(LMDBGenerator):
         images = []
 
         # Read image paths from directory
-        image_paths = [glob(os.path.join(directory_path, f"*.{ext}")) for ext in extensions]
+        image_paths = chain([glob(os.path.join(directory_path, f"*.{ext}")) for ext in extensions])
+        image_paths = list(image_paths)[0]
 
         # Open files as binary
-        for image_path in sorted(image_paths):
-            with open(image_path, "r") as image_file:
+        sorted(image_paths)
+
+        for image_path in image_paths:
+            with open(image_path, "rb") as image_file:
                 binary_image = image_file.read()
                 images.append(binary_image)
 
@@ -129,10 +134,13 @@ class LMDBImageGenerator(LMDBGenerator):
         annotations = []
 
         # Read image paths from directory
-        image_paths = [glob(os.path.join(directory_path, f"*.{ext}")) for ext in extensions]
+        image_paths = chain([glob(os.path.join(directory_path, f"*.{ext}")) for ext in extensions])
+        image_paths = list(image_paths)[0]
 
         # Extract values from image path.
-        for image_path in sorted(image_paths):
+        sorted(image_paths)
+
+        for image_path in image_paths:
             image_name = os.path.splitext(os.path.basename(image_path))[0]
 
             # Here we assume that the image name is composed by <annotation>_<filename>.<extension>
@@ -140,3 +148,54 @@ class LMDBImageGenerator(LMDBGenerator):
             annotations.append(annotation)
 
         return annotations
+
+
+def build_arg_parser() -> ArgumentParser:
+    """Create the arguments to generate a LMDB dataset."""
+    parser = ArgumentParser()
+
+    parser.add_argument(
+        "--data-directory-path",
+        type=str,
+        help="Path to the files to be read.",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--output-dataset-path",
+        type=str,
+        help="Path to the LMDB file.",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--annotations-directory-path",
+        type=str,
+        help="""Path to the files with annotations labels. If not provided, 
+        the --data-directory-path will be used.""",
+    )
+
+    parser.add_argument(
+        "--extensions",
+        type=str,
+        nargs="+",
+        help="File extensions to be considered. By default `jpg` and `png`.",
+        default=["jpg", "png"],
+    )
+
+    return parser
+
+
+if __name__ == "__main__":
+    args = build_arg_parser().parse_args()
+    lmdb_generator = LMDBImageGenerator()
+
+    images = lmdb_generator.read_images_from_directory(args.data_directory_path)
+
+    annotations = lmdb_generator.read_annotations_from_filename(
+        args.data_directory_path
+        if args.annotations_directory_path is None
+        else args.annotations_directory_path
+    )
+
+    lmdb_generator.create_dataset(images, annotations, args.output_dataset_path)
