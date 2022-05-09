@@ -2,6 +2,7 @@
 # More info at: https://lmdb.readthedocs.io/en/release/
 
 import os
+from glob import glob
 from typing import Any, Dict, List
 
 import lmdb
@@ -60,3 +61,82 @@ class LMDBGenerator:
 
             if i % self.buffer_size == 0 or i == len(data) - 1:
                 self._write_buffer(buffer, lmdb_dataset, free_buffer=True)
+
+
+class LMDBImageGenerator(LMDBGenerator):
+    @staticmethod
+    def read_images_from_directory(
+        directory_path: str, extensions: List[str] = ["jpg", "png"]
+    ) -> List[object]:
+        """Read images from a given directory and return binary files instead of arrays of pixels.
+
+        Arguments:
+            directory_path {str} -- Path to a directory containing image files.
+
+        Keyword Arguments:
+            extensions {List[str]} -- File extensions to be considered (default: {["jpg", "png"]}).
+
+        Raises:
+            NotADirectoryError: When the `directory_path` does not exist.
+
+        Returns:
+            List[object] -- A list of images as binary files.
+        """
+
+        if not os.path.exists(directory_path):
+            raise NotADirectoryError()
+
+        images = []
+
+        # Read image paths from directory
+        image_paths = [glob(os.path.join(directory_path, f"*.{ext}")) for ext in extensions]
+
+        # Open files as binary
+        for image_path in sorted(image_paths):
+            with open(image_path, "r") as image_file:
+                binary_image = image_file.read()
+                images.append(binary_image)
+
+        return images
+
+    @staticmethod
+    def read_annotations_from_filename(
+        directory_path: str, extensions: List[str] = ["jpg", "png"]
+    ) -> List[str]:
+        """Read annotations from image files. The annotations should be in the file name.
+        In this method file names with the following pattern are considered:
+
+        <annotation>_<filename>.<extension>
+        Example: 9598098491_01.jpg, 9303974519_02.jpg, 2404269934_03.jpg, etc.
+
+
+        Arguments:
+            directory_path {str} -- _description_
+
+        Keyword Arguments:
+            extensions {List[str]} -- _description_ (default: {["jpg", "png"]})
+
+        Raises:
+            NotADirectoryError: When the `directory_path` does not exist.
+
+        Returns:
+            List[str] -- A list of annotations.
+        """
+
+        if not os.path.exists(directory_path):
+            raise NotADirectoryError()
+
+        annotations = []
+
+        # Read image paths from directory
+        image_paths = [glob(os.path.join(directory_path, f"*.{ext}")) for ext in extensions]
+
+        # Extract values from image path.
+        for image_path in sorted(image_paths):
+            image_name = os.path.splitext(os.path.basename(image_path))[0]
+
+            # Here we assume that the image name is composed by <annotation>_<filename>.<extension>
+            annotation = image_name.split("_")[0]
+            annotations.append(annotation)
+
+        return annotations
